@@ -92,4 +92,17 @@ describe('Escrow', () => {
 			expect(result).to.be.equal(true);
 		});
 	});
+
+	// Deposits
+	describe('Deposits', () => {
+		it('Updates contract balance', async () => {
+			const transaction = await escrow
+				.connect(buyer)
+				.depositEarnest(1, { value: tokens(5) });
+			await transaction.wait();
+
+			const balance = await escrow.getBalance();
+			expect(balance).to.be.equal(tokens(5));
+		});
+	});
 });
