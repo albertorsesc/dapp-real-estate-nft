@@ -10,5 +10,30 @@ interface IERC721 {
 }
 
 contract Escrow {
+    address public lender;
+    address public inspector;
+    address payable public seller;
+    address public nftAddress;
 
+    mapping(uint256 => bool) public isListed;
+
+    constructor(
+        address _nftAddress,
+        address payable _seller,
+        address _inspector,
+        address _lender
+    ) {
+        nftAddress = _nftAddress;
+        seller = _seller;
+        inspector = _inspector;
+        lender = _lender;
+    }
+
+    function list(uint256 _nftID) public {
+        // Transfer NFT from seller to this contract
+        IERC721(nftAddress).transferFrom(msg.sender, address(this), _nftID);
+
+        // Mark NFT as listed
+        isListed[_nftID] = true;
+    }
 }

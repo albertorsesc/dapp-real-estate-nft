@@ -2,9 +2,77 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 const tokens = (n) => {
-    return ethers.utils.parseUnits(n.toString(), 'ether')
-}
+	return ethers.utils.parseUnits(n.toString(), 'ether');
+};
 
 describe('Escrow', () => {
+	let buyer, seller, inspector, lender;
+	let realEstate, escrow;
 
-})
+	beforeEach(async () => {
+		[buyer, seller, inspector, lender] = await ethers.getSigners();
+
+		// Deploy RealEstate contract
+		const RealEstate = await ethers.getContractFactory('RealEstate');
+		realEstate = await RealEstate.deploy();
+
+		let transaction = await realEstate
+			.connect(seller)
+			.mint(
+				'https://ipfs.io/ipfs/QmQUozrHLAusXDxrvsESJ3PYB3rUeUuBAvVWw6nop2uu7c/1.png'
+			);
+
+		await transaction.wait();
+
+		const Escrow = await ethers.getContractFactory('Escrow');
+		escrow = await Escrow.deploy(
+			realEstate.address,
+			seller.address,
+			inspector.address,
+			lender.address
+		);
+
+		// Approve property
+		transaction = await realEstate.connect(seller).approve(escrow.address, 1);
+		await transaction.wait();
+
+		// List property
+		transaction = await escrow.connect(seller).list(1);
+		await transaction.wait();
+	});
+
+	// Deployment
+	describe('Deployment', () => {
+		it('Returns NFT address', async () => {
+			const response = await escrow.nftAddress();
+			expect(response).to.be.equal(realEstate.address);
+		});
+
+		it('Returns seller', async () => {
+			const response = await escrow.seller();
+			expect(response).to.be.equal(seller.address);
+		});
+
+		it('Returns inspector', async () => {
+			const response = await escrow.inspector();
+			expect(response).to.be.equal(inspector.address);
+		});
+
+		it('Returns lender', async () => {
+			const response = await escrow.lender();
+			expect(response).to.be.equal(lender.address);
+		});
+	});
+
+	// Listing
+	describe('Listing', () => {
+		it('Updates ownership', async () => {
+			expect(await realEstate.ownerOf(1)).to.be.equal(escrow.address);
+		});
+
+		it('Updates as listed', async () => {
+			const result = await escrow.isListed(1);
+			expect(result).to.be.equal(true);
+		});
+	});
+});
