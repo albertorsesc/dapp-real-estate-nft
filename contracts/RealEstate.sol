@@ -26,4 +26,6 @@ contract RealEstate is ERC721URIStorage {
     return _tokenIds.current();
   }
 
+
+
 }
